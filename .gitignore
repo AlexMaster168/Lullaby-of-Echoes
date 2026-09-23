@@ -1,0 +1,27 @@
+# Unity
+Library/
+Temp/
+Logs/
+obj/
+Build/
+Builds/
+UserSettings/
+MemoryCaptures/
+*.csproj
+*.sln
+*.pidb
+*.userprefs
+*.unityproj
+
+# IDE
+.vs/
+.vscode/
+.idea/
+
+# ОС
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Черновик сюжета (не для репозитория)
+Сюжет.txt
