@@ -100,6 +100,29 @@ public static class AutoTest
             yield break;
         }
 
+        if (Mode == "novice")
+        {
+            PlayerPrefs.DeleteAll();
+            Screens.DefaultDiff = 0;
+            yield return new WaitForSecondsRealtime(2f);
+            In.auto = true;
+            while (!Screens.ChoosingDiff) yield return null;
+            In.auto = false;
+            yield return new WaitForSecondsRealtime(0.5f);
+            yield return Shot("diff_menu");
+            In.auto = true;
+            In.autoChoice = 1;
+            Battle.Autopilot = true;
+            Time.timeScale = 4;
+            yield return WaitIdle();
+            Log("novice diff=" + Gm.S.diff + " maxHp=" + Gm.S.maxHp + " name=" + Diff.Name);
+            Gm.StartCoroutine(BattleShots("letter"));
+            yield return Touch("letter");
+            Log("DONE novice");
+            Application.Quit();
+            yield break;
+        }
+
         if (Mode == "intro")
         {
             PlayerPrefs.DeleteAll();
@@ -211,12 +234,14 @@ public static class AutoTest
 
     static IEnumerator BattleShots(string id)
     {
-        bool menu = false, dodge = false;
+        bool menu = false, dodge = false, darkShot = false, shrinkShot = false;
         while (Gm.mode != global::Mode.Battle) yield return null;
         while (Gm.mode == global::Mode.Battle)
         {
             if (!menu && Gm.battle.InMenu && Gm.fade < 0.05f) { menu = true; yield return new WaitForSecondsRealtime(0.2f); yield return Shot(id + "_menu"); }
             if (!dodge && Gm.battle.InDodge && Gm.battle.BulletCount > 3) { dodge = true; yield return Shot(id + "_dodge"); }
+            if (!darkShot && Gm.battle.InDark) { darkShot = true; yield return new WaitForSecondsRealtime(0.3f); yield return Shot(id + "_dark"); }
+            if (!shrinkShot && Gm.battle.Shrinking) { shrinkShot = true; yield return Shot(id + "_shrink"); }
             yield return null;
         }
     }

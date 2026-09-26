@@ -104,6 +104,24 @@ public class Canvas
             }
     }
 
+    // Автозатенение: блик сверху-слева, тень снизу-справа, мягкий дизер у нижнего края.
+    // Превращает плоские заливки в объёмные формы. Вызывать до Outline.
+    public void Shade(float hi = 1.18f, float lo = 0.72f)
+    {
+        var src = (Color32[])px.Clone();
+        bool O(int x, int y) => x >= 0 && y >= 0 && x < w && y < h && src[y * w + x].a > 0;
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                if (!O(x, y)) continue;
+                var c = src[y * w + x];
+                if (!O(x, y - 1) || !O(x - 1, y)) c = Pix.Shade(c, hi);
+                else if (!O(x, y + 1) || !O(x + 1, y)) c = Pix.Shade(c, lo);
+                else if ((!O(x, y + 2) || !O(x + 2, y)) && ((x + y) & 1) == 0) c = Pix.Shade(c, 0.86f);
+                px[y * w + x] = c;
+            }
+    }
+
     public void Speckle(int seed, float chance, Color32 c, int x0 = 0, int y0 = 0, int rw = -1, int rh = -1)
     {
         var r = new System.Random(seed);
@@ -175,6 +193,43 @@ public static class Pix
         tex = cv != null ? cv.ToTex(0) : null;
         colorCache[key] = tex;
         return tex;
+    }
+
+    // Белый силуэт спрайта — для вспышки при попадании
+    static readonly Dictionary<string, Texture2D> silCache = new Dictionary<string, Texture2D>();
+    public static Texture2D Silhouette(string key)
+    {
+        if (silCache.TryGetValue(key, out var tex)) return tex;
+        var cv = Art.Draw(key);
+        if (cv != null)
+        {
+            for (int i = 0; i < cv.px.Length; i++)
+                if (cv.px[i].a > 0) cv.px[i] = new Color32(255, 255, 255, 255);
+            tex = cv.ToTex(0);
+        }
+        silCache[key] = tex;
+        return tex;
+    }
+
+    // Радиальные градиенты: свечение, виньетка, «дыра» в темноте
+    static Texture2D glow, vignette, hole;
+    public static Texture2D GlowTex => glow ?? (glow = Radial(64, (d) => Mathf.Pow(Mathf.Clamp01(1 - d), 2f)));
+    public static Texture2D HoleTex => hole ?? (hole = Radial(128, (d) => Mathf.SmoothStep(0, 1, Mathf.Clamp01((d - 0.55f) / 0.45f))));
+    public static Texture2D VignetteTex => vignette ?? (vignette = Radial(128, (d) => Mathf.Clamp01((d - 0.55f) * 1.6f) * 0.85f));
+
+    static Texture2D Radial(int n, Func<float, float> alpha)
+    {
+        var t = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+        var px = new Color[n * n];
+        for (int y = 0; y < n; y++)
+            for (int x = 0; x < n; x++)
+            {
+                float dx = (x + 0.5f) / n * 2 - 1, dy = (y + 0.5f) / n * 2 - 1;
+                px[y * n + x] = new Color(1, 1, 1, alpha(Mathf.Sqrt(dx * dx + dy * dy)));
+            }
+        t.SetPixels(px);
+        t.Apply();
+        return t;
     }
 
     static Texture2D white;

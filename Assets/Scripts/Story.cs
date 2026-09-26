@@ -245,7 +245,9 @@ public static class Story
     // ===================== ПЕРЕХОДЫ =====================
     public static IEnumerator NewGame()
     {
-        Gm.S = new SaveData();
+        Gm.S = new SaveData { diff = Screens.PendingDiff };
+        S.maxHp = S.hp = Diff.MaxHp;
+        S.hums = Diff.Hums;
         Gm.UpdateGray();
         Gm.mode = Mode.Scene;
         Gm.music.Stop(0.5f);
@@ -373,7 +375,7 @@ public static class Story
             }
         Gm.music.Sfx("save");
         S.hp = S.maxHp;
-        S.hums = 3;
+        S.hums = Diff.Hums;
         yield return Say("", line, "ПАМЯТЬ восстановлена. Напевы восстановлены.");
         yield return Gm.dlg.Ask("", "Сохранить игру?", "Сохранить", "Не надо");
         if (Gm.dlg.Choice == 0)

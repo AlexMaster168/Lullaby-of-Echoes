@@ -124,6 +124,16 @@ public class Dialogue
 
     bool Full => shown >= text.Length;
 
+    bool Shouting
+    {
+        get
+        {
+            int up = 0, letters = 0;
+            foreach (char ch in text) if (char.IsLetter(ch)) { letters++; if (char.IsUpper(ch)) up++; }
+            return letters > 6 && up > letters * 0.6f;
+        }
+    }
+
     public void Update()
     {
         if (!Active) return;
@@ -177,13 +187,17 @@ public class Dialogue
         if (p != null)
         {
             float s = Mathf.Max(1, Mathf.Floor(Mathf.Min(110f / p.height, 110f / p.width)));
-            G.TexC(p, r.x + 70, r.y + r.height / 2, s);
+            float talk = Full ? 0 : Mathf.Abs(Mathf.Sin(Time.time * 16)) * -3; // портрет «говорит»
+            G.TexC(p, r.x + 70, r.y + r.height / 2 + talk, s);
             tx = r.x + 136;
         }
         if (sp.name != null && !italic)
             G.Text(sp.name, r.x + 14, r.y - 12, 14, new Color(1f, 0.9f, 0.3f));
         Color col = italic ? new Color(0.75f, 0.85f, 1f) : Color.white;
-        G.Text(text.Substring(0, Mathf.Min((int)shown, text.Length)), tx, r.y + 20, 20, col, TextAnchor.UpperLeft, r.width - (tx - r.x) - 10);
+        // Крик (почти всё капслоком) трясётся
+        float jx = 0, jy = 0;
+        if (Shouting) { jx = Random.Range(-1.5f, 1.5f); jy = Random.Range(-1.5f, 1.5f); }
+        G.Text(text.Substring(0, Mathf.Min((int)shown, text.Length)), tx + jx, r.y + 20 + jy, 20, col, TextAnchor.UpperLeft, r.width - (tx - r.x) - 10);
         // Мигающая подсказка «жми Z», когда реплика допечатана
         if (Full && !asking && (int)(Time.unscaledTime * 2) % 2 == 0)
             G.Text("[Z]", r.xMax - 46, r.yMax - 26, 14, new Color(1f, 1f, 1f, 0.6f));

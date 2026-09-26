@@ -46,18 +46,18 @@ public static class Enemies
         Add(new EnemyDef
         {
             id = "clock", name = "Часы", sprite = "e_clock", voice = "clock", bullet = "b_drop",
-            hp = 34, atk = 3,
+            hp = 28, atk = 3,
             check = "Утонувшие часы. Упрямо показывают 17:42.",
             intro = "Утонувшие Часы всплывают из-под причала!",
             acts = {
-                A("Послушать тиканье", 30, "Тик... так?.. Я... ещё умею?", "Ты прикладываешь ухо к стеклу.|Тишина. Потом — очень тихо — «тик».", set: "listen"),
-                A("Протереть стекло", 30, "Я вижу... который час. Сколько же прошло?", "Ты вытираешь воду рукавом огромной куртки.|Цифры проступают яснее."),
-                A("Завести", 40, "17:43. Время снова идёт. Спасибо.", "Ты заводишь колёсико.|Стрелки дрожат... и сдвигаются на одну минуту.", need: "listen")
+                A("Послушать тиканье", 50, "Тик... так?.. Я... ещё умею?", "Ты прикладываешь ухо к стеклу.|Тишина. Потом — очень тихо — «тик».", set: "listen"),
+                A("Протереть стекло", 50, "Я вижу... который час. Сколько же прошло?", "Ты вытираешь воду рукавом огромной куртки.|Цифры проступают яснее."),
+                A("Завести", 50, "17:43. Время снова идёт. Спасибо.", "Ты заводишь колёсико.|Стрелки дрожат... и сдвигаются на одну минуту.", need: "listen")
             },
             talk = L("Не трогай стрелки! Если они сдвинутся — всё станет правдой!", "17:42. 17:42. Всегда 17:42.", "Пока время стоит, ничего плохого ещё не случилось. Понимаешь?"),
             calmTalk = L("Тик-так. Как же это... приятно."),
             flavor = L("Капли стекают по циферблату.", "Часы упрямо показывают 17:42.", "Где-то глубоко внутри тикает пружина."),
-            patterns = L("sweep", "rain+side", "sweep"),
+            patterns = L("sweep", "drip", "sweep"),
             sparedText = L("Часы тикают. Впервые за очень долгое время.", "Они медленно погружаются обратно — но уже живыми."),
             erasedText = L("Стрелки осыпаются.", "Время в этом месте больше не существует."),
             lastWords = L("17:42... так и... не...")
@@ -66,7 +66,7 @@ public static class Enemies
         Add(new EnemyDef
         {
             id = "keeper", name = "Смотритель", sprite = "e_keeper", voice = "keeper", bullet = "b_light", music = "boss",
-            hp = 100, atk = 4, boss = true, minTurns = 3, boxW = 200, boxH = 150,
+            hp = 110, atk = 4, boss = true, minTurns = 3, boxW = 200, boxH = 150,
             check = "Первая стадия. ОТРИЦАНИЕ.\nЗакрывает свет руками, чтобы корабли не нашли дорогу.",
             intro = "Смотритель Маяка закрывает свет ладонями.\nОТРИЦАНИЕ преграждает путь!",
             acts = {
@@ -88,7 +88,7 @@ public static class Enemies
         Add(new EnemyDef
         {
             id = "tape", name = "Кассета", sprite = "e_tape", voice = "tape", bullet = "b_tape",
-            hp = 32, atk = 3,
+            hp = 60, atk = 4,
             check = "Зажёванная кассета. Её слишком часто перематывали на одну и ту же песню.",
             intro = "Зажёванная Кассета выпутывается из грядки!",
             acts = {
@@ -108,7 +108,7 @@ public static class Enemies
         Add(new EnemyDef
         {
             id = "hope", name = "Надежда", sprite = "e_hope", voice = "hope", bullet = "b_petal",
-            hp = 30, atk = 3,
+            hp = 55, atk = 4,
             check = "Увядшая Надежда. Надежда, что всё обойдётся. Её давно никто не поливал.",
             intro = "Увядшая Надежда поникла прямо на дорожке.",
             acts = {
@@ -128,7 +128,7 @@ public static class Enemies
         Add(new EnemyDef
         {
             id = "thorn", name = "Терновая", sprite = "e_thorn", voice = "thorn", bullet = "b_thorn", music = "boss",
-            hp = 110, atk = 5, boss = true, minTurns = 3, boxW = 220, boxH = 140,
+            hp = 170, atk = 5, boss = true, minTurns = 3, boxW = 220, boxH = 140,
             check = "Вторая стадия. ГНЕВ.\nКолючки растут внутрь, а не наружу.",
             intro = "Терновая вырывается из земли!\nГНЕВ заполняет оранжерею!",
             acts = {
@@ -150,7 +150,7 @@ public static class Enemies
         Add(new EnemyDef
         {
             id = "moth", name = "Мотылёк", sprite = "e_moth", voice = "moth", bullet = "b_moth",
-            hp = 30, atk = 3,
+            hp = 85, atk = 5,
             check = "Неоновый Мотылёк. Летит на любой свет. Даже на свет фар.",
             intro = "Неоновый Мотылёк кружит вокруг тебя!",
             acts = {
@@ -170,7 +170,7 @@ public static class Enemies
         Add(new EnemyDef
         {
             id = "token", name = "Жетон", sprite = "e_token", voice = "token", bullet = "b_coin",
-            hp = 32, atk = 3,
+            hp = 90, atk = 5,
             check = "Жетон Ностальгии. Последний жетон от игрового автомата.",
             intro = "Жетон Ностальгии звонко выкатывается к тебе!",
             acts = {
@@ -190,7 +190,7 @@ public static class Enemies
         Add(new EnemyDef
         {
             id = "merchant", name = "Торговец", sprite = "e_merchant", voice = "merchant", bullet = "b_coin", music = "boss",
-            hp = 120, atk = 5, boss = true, minTurns = 3, boxW = 220, boxH = 150,
+            hp = 240, atk = 6, boss = true, minTurns = 3, boxW = 220, boxH = 150,
             check = "Третья стадия. ТОРГ.\nПредлагает сделку, от которой больно отказаться.",
             intro = "Торговец Снами раскладывает товар.\nТОРГ начинается!",
             acts = {
@@ -210,8 +210,16 @@ public static class Enemies
 
         Add(new EnemyDef
         {
-            id = "oculus", name = "Окулюс", sprite = "oculus", voice = "oculus", bullet = "b_dark", music = "oculus",
-            hp = 90, atk = 4, boss = true, minTurns = 4, boxW = 180, boxH = 150,
+            id = "oculus", name = "Окулюс", sprite = "e_oculus", voice = "oculus", bullet = "b_dark", music = "oculus",
+            hp = 330, atk = 6, boss = true, minTurns = 6, boxW = 200, boxH = 160,
+            // Фаза 1 — Тень, 2 — Тьма (видно только вокруг сердца), 3 — Отчаяние (рамка сжимается)
+            phases = new[]
+            {
+                L("hands+side", "hands+tears"),
+                L("dark:hands+rain", "dark:eyes+hands"),
+                L("shrink:tears+ringin", "shrink:eyes+tears+hands")
+            },
+            phaseText = L(null, "Свет гаснет. Остаётся только твоё сердце.", "Стены сжимаются. Окулюс плачет."),
             check = "Четвёртая стадия. ДЕПРЕССИЯ.\nУ него нет лица. Он очень, очень устал.",
             intro = "Окулюс больше не убегает.\nВоздух становится тяжёлым.",
             acts = {
@@ -223,7 +231,7 @@ public static class Enemies
             talk = L("...", "Отдай... плеер...", "Зачем ты идёшь наверх? Там только больно.", "Я так устал."),
             calmTalk = L("..."),
             flavor = L("Окулюс молчит.", "Тень становится то больше, то меньше. Как дыхание.", "Тебе кажется, что пустое лицо смотрит прямо в тебя.", "Где-то далеко пищит больничный монитор."),
-            patterns = L("hands", "hands+rain", "hands+wall", "hands+sway"),
+            patterns = L("hands"),
             sparedText = L("Тень опускается на колени.", "На пустом лице медленно проступают черты."),
             erasedText = L("Тень не сопротивляется. Она просто исчезает.", "Тебе вдруг становится очень холодно. Непонятно почему."),
             lastWords = L("...наконец... тихо...")
@@ -233,7 +241,7 @@ public static class Enemies
         Add(new EnemyDef
         {
             id = "page", name = "Страница", sprite = "e_page", voice = "page", bullet = "b_page",
-            hp = 34, atk = 4,
+            hp = 110, atk = 5,
             check = "Пустая Страница. Сюда должны были записать, что было дальше.",
             intro = "Пустая Страница опускается с полки.",
             acts = {

@@ -132,6 +132,15 @@ public static class Tracks
                     Pad(LULL_PROG, "1+5:6", 1, 0.09f),
                     Drums("k...........k.........................", 0.25f));
 
+            case "oculus_boss": // Окулюс во 2–3 фазе: колыбельная, сорвавшаяся в крик
+                return Synth.Track(key, 138, 16, 3, 0.22f, 0.3f, 0.2f,
+                    new V { wave = W.Sq, seq = LULL, vol = 0.11f, vib = 0.2f, atk = 0.01f, dec = 0.1f, sus = 0.7f, rel = 0.08f },
+                    new V { wave = W.Saw, seq = LULL, vol = 0.06f, oct = -1, detune = 0.25f, atk = 0.01f, dec = 0.1f, sus = 0.7f, rel = 0.08f },
+                    Acc(W.Tri, LULL_PROG, "1:1 1:1 8:1 1:1 5:1 8:1", 1, 0.26f, 0.6f),
+                    Acc(W.Pulse, LULL_PROG, "1:1 3:1 5:1 8:1 5:1 3:1", 4, 0.05f, 0.5f),
+                    Pad(LULL_PROG, "1+5:6", 2, 0.06f),
+                    Drums("k.hhs.k.khs.hk.hhs.k.shss", 0.4f));
+
             case "echo": // Мадам Эхо — обольстительный вальс
                 return Synth.Track(key, 84, 8, 3, 0.36f, 0.35f, 0.3f,
                     Mel(W.Box, ECHO, 0.25f),

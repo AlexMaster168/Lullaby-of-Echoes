@@ -11,6 +11,10 @@ public static class Art
 
     public static Canvas Draw(string key)
     {
+        // Кадр анимации: "e_moth@2"
+        int f = 0;
+        int at = key.IndexOf('@');
+        if (at >= 0) { f = (key[at + 1] - '0') & 3; key = key.Substring(0, at); }
         if (key.StartsWith("noa_")) return Noa(key[4], key[5] - '0');
         if (key.StartsWith("skrip")) return Skrip(key[5] - '0');
         if (key.StartsWith("static")) return Static(key[6] - '0');
@@ -29,16 +33,17 @@ public static class Art
             case "npc_arch": return Ghost(C("c0c0c0"), 3);
             case "tape": return TapeIcon();
             case "exit": return Exit();
-            case "e_letter": return Letter();
-            case "e_clock": return Clock();
-            case "e_keeper": return Keeper();
-            case "e_tape": return Cassette();
-            case "e_hope": return Hope();
-            case "e_thorn": return Thorn();
-            case "e_moth": return Moth();
-            case "e_token": return Token();
-            case "e_merchant": return Merchant();
-            case "e_page": return Page();
+            case "e_letter": return Letter(f);
+            case "e_clock": return Clock(f);
+            case "e_keeper": return Keeper(f);
+            case "e_tape": return Cassette(f);
+            case "e_hope": return Hope(f);
+            case "e_thorn": return Thorn(f);
+            case "e_moth": return Moth(f);
+            case "e_token": return Token(f);
+            case "e_merchant": return Merchant(f);
+            case "e_page": return Page(f);
+            case "e_oculus": return OculusBig(f);
             case "soul": return Soul();
             case "hospital0": return Hospital(false);
             case "hospital1": return Hospital(true);
@@ -49,38 +54,43 @@ public static class Art
 
     // ================= ПЕРСОНАЖИ =================
 
+    // f: 0 — стоит, 1/2 — шаги, 3 — моргает
     static Canvas Noa(char dir, int f)
     {
         var c = new Canvas(16, 24);
-        Color32 hair = C("5a3a2a"), skin = C("f2c9a0"), jacket = C("b5553c"), jshade = C("8a3b2a"),
+        Color32 hair = C("5a3a2a"), hairHi = C("7a5238"), skin = C("f2c9a0"), jacket = C("b5553c"), jshade = C("8a3b2a"),
             pants = C("3b4a6b"), shoe = C("2a2020"), eye = C("201818"), dev = C("9aa0a8"), zip = C("d8b060"), blush = C("e8a090");
+        bool blink = f == 3;
+        if (blink) f = 0;
 
         // Ноги
         if (dir == 's')
         {
             if (f == 0) { c.Rect(6, 19, 2, 3, pants); c.Rect(8, 19, 2, 3, pants); c.Rect(6, 22, 4, 1, shoe); }
-            else { c.Rect(5, 19, 2, 3, pants); c.Rect(9, 19, 2, 2, pants); c.Rect(4, 22, 3, 1, shoe); c.Rect(9, 21, 3, 1, shoe); }
+            else if (f == 1) { c.Rect(5, 19, 2, 3, pants); c.Rect(9, 19, 2, 2, pants); c.Rect(4, 22, 3, 1, shoe); c.Rect(9, 21, 3, 1, shoe); }
+            else { c.Rect(9, 19, 2, 3, pants); c.Rect(5, 19, 2, 2, pants); c.Rect(9, 22, 3, 1, shoe); c.Rect(4, 21, 3, 1, shoe); }
         }
         else
         {
-            int l = f == 1 ? 1 : 0;
-            c.Rect(5, 19, 2, 3 - l, pants); c.Rect(9, 19, 2, 3, pants);
-            c.Rect(5, 22 - l, 2, 1, shoe); c.Rect(9, 22, 2, 1, shoe);
+            int l = f == 1 ? 1 : 0, r = f == 2 ? 1 : 0;
+            c.Rect(5, 19, 2, 3 - l, pants); c.Rect(9, 19, 2, 3 - r, pants);
+            c.Rect(5, 22 - l, 2, 1, shoe); c.Rect(9, 22 - r, 2, 1, shoe);
         }
+        int sw = f == 1 ? 1 : f == 2 ? -1 : 0; // размах рукавов
 
         // Огромная куртка (куртка старшего брата)
         if (dir == 's')
         {
             c.Rect(4, 10, 8, 10, jacket);
             c.Rect(3, 14, 10, 6, jacket);
-            c.Rect(7, 11, 3, 8, jshade);
-            c.Rect(10, 15, 3, 3, dev); c.Set(11, 16, C("e08030"));
+            c.Rect(7 + sw, 11, 3, 8, jshade);
+            c.Rect(10 + sw, 15, 3, 3, dev); c.Set(11 + sw, 16, C("e08030"));
         }
         else
         {
             c.Rect(3, 10, 10, 10, jacket);
             c.Rect(2, 14, 12, 6, jacket);
-            c.Rect(1, 11, 2, 8, jshade); c.Rect(13, 11, 2, 8, jshade);
+            c.Rect(1, 11 + sw, 2, 8, jshade); c.Rect(13, 11 - sw, 2, 8, jshade);
             c.Rect(5, 10, 6, 2, jshade);
             if (dir == 'd')
             {
@@ -92,25 +102,29 @@ public static class Art
 
         // Голова
         c.Ellipse(8, 6, 5.5f, 5.5f, hair);
+        c.Line(5, 2, 9, 1, hairHi);
         if (dir == 'd')
         {
             c.Ellipse(8, 7.5f, 4.2f, 3.8f, skin);
             c.Rect(4, 3, 8, 2, hair);
-            c.Set(5, 5, hair); c.Set(11, 5, hair);
-            c.Rect(5, 7, 1, 2, eye); c.Rect(10, 7, 1, 2, eye);
+            c.Set(5, 5, hair); c.Set(11, 5, hair); c.Set(8, 5, hair);
+            if (blink) { c.Rect(5, 8, 1, 1, eye); c.Rect(10, 8, 1, 1, eye); }
+            else { c.Rect(5, 7, 1, 2, eye); c.Rect(10, 7, 1, 2, eye); }
             c.Set(4, 9, blush); c.Set(11, 9, blush);
         }
         else if (dir == 's')
         {
             c.Ellipse(10, 7.5f, 3.4f, 3.6f, skin);
             c.Rect(7, 3, 7, 2, hair);
-            c.Rect(11, 7, 1, 2, eye);
+            if (blink) c.Rect(11, 8, 1, 1, eye); else c.Rect(11, 7, 1, 2, eye);
             c.Set(12, 9, blush);
         }
         else
         {
             c.Line(5, 4, 7, 5, C("6e4a36"));
+            c.Line(9, 3, 11, 5, C("6e4a36"));
         }
+        c.Shade();
         c.Outline(Ink);
         return c;
     }
@@ -131,6 +145,7 @@ public static class Art
         c.Line(12, 10, 15, 4, C("d8d4c8")); c.Line(13, 10, 16, 4, C("d8d4c8"));
         c.Rect(15, 2, 2, 2, C("ece8dc"));
         c.Set(17, 3, C("c05030"));
+        c.Shade(1.08f, 0.8f);
         c.Set(15, 2, Ink);
         c.Outline(C("3a3630"));
         return c;
@@ -155,6 +170,7 @@ public static class Art
         c.Ellipse(13, 3.2f, 4.8f, 2.8f, hair);
         c.Circle(13, 0.9f, 1.8f, hair);
         c.Rect(8, 4, 2, 5, hair); c.Rect(16, 4, 2, 5, hair);
+        c.Shade();
         if (face)
         {
             c.Line(10, 7, 11, 7, Ink); c.Line(14, 7, 15, 7, Ink);
@@ -189,7 +205,58 @@ public static class Art
         // размытые края
         var r = new System.Random(5);
         for (int i = 0; i < 40; i++) c.Set(r.Next(0, 22), 28 + r.Next(0, 6), Clear);
+        c.Shade(1.3f, 0.8f);
         c.Outline(C("4a3a6a"));
+        return c;
+    }
+
+    // Боевая форма Окулюса: крупнее, щупальца шевелятся, пустота на лице мерцает
+    static Canvas OculusBig(int f)
+    {
+        var c = new Canvas(46, 64);
+        Color32 body = C("120f18"), edge = C("241e30"), blank = C("35304a"), shimmer = C("4c4666"), claw = C("3a3450");
+        // щупальца снизу: изгибаются и сужаются, каждое в своей фазе
+        for (int i = 0; i < 6; i++)
+        {
+            float x = 8 + i * 6f;
+            float px = x, py = 52;
+            for (int k = 1; k <= 6; k++)
+            {
+                float nx = x + Mathf.Sin(f * 1.5708f + i * 1.7f + k * 0.8f) * (k * 0.7f);
+                float ny = 52 + k * 2;
+                c.Line(px, py, nx, ny, body);
+                if (k < 4) c.Line(px + 1, py, nx + 1, ny, body);
+                px = nx; py = ny;
+            }
+        }
+        // плащ-тень
+        c.Tri(23, 12, 3, 58, 43, 58, body);
+        // длинные руки тянутся вниз
+        float sway = f % 2 == 0 ? 0 : 1.5f;
+        for (int k = 0; k < 3; k++)
+        {
+            c.Line(13 + k, 22, 3 + k - sway, 50, body);
+            c.Line(31 - k, 22, 41 - k + sway, 50, body);
+        }
+        c.Line(3 - sway, 50, 0, 55, claw); c.Line(4 - sway, 50, 3, 56, claw); c.Line(5 - sway, 50, 6, 55, claw);
+        c.Line(41 + sway, 50, 45, 55, claw); c.Line(40 + sway, 50, 42, 56, claw); c.Line(39 + sway, 50, 39, 55, claw);
+        // капюшон
+        c.Ellipse(23, 14, 11, 13, body);
+        c.Ellipse(23, 15, 9, 11, edge);
+        // пустое лицо
+        c.Ellipse(23, 17, 6, 8, blank);
+        var r = new System.Random(f * 13 + 7);
+        for (int i = 0; i < 14; i++)
+        {
+            int x = r.Next(18, 29), y = r.Next(10, 25);
+            float dx = (x - 23) / 6f, dy = (y - 17) / 8f;
+            if (dx * dx + dy * dy < 0.8f) c.Set(x, y, shimmer);
+        }
+        // рваные края снизу
+        var rr = new System.Random(11 + f);
+        for (int i = 0; i < 30; i++) c.Set(rr.Next(4, 43), 52 + rr.Next(0, 4), Clear);
+        c.Shade(1.35f, 0.8f);
+        c.Outline(C("5a4a8a"));
         return c;
     }
 
@@ -200,65 +267,80 @@ public static class Art
         c.Rect(4, 11, 8, 11, col);
         c.Tri(4, 14, 4, 22, 2, 22, col); c.Tri(11, 14, 11, 22, 13, 22, col);
         c.Circle(8, 7, 4.5f, col);
-        if (faceOn) { c.Set(6, 7, Ink); c.Set(10, 7, Ink); }
         switch (hat)
         {
             case 0: c.Rect(3, 3, 10, 1, dark); c.Rect(5, 0, 6, 3, dark); break;           // шляпа
             case 1: c.Tri(2, 4, 14, 4, 8, 0, C("c8a860")); break;                        // соломенная
             case 2: c.Rect(4, 5, 8, 2, C("40e0ff")); break;                              // визор
-            case 3: c.Rect(5, 5, 2, 2, Ink); c.Rect(9, 5, 2, 2, Ink); c.Line(7, 6, 8, 6, Ink); break; // очки
         }
+        c.Shade();
+        if (faceOn) { c.Set(6, 7, Ink); c.Set(10, 7, Ink); }
+        if (hat == 3) { c.Rect(5, 5, 2, 2, Ink); c.Rect(9, 5, 2, 2, Ink); c.Line(7, 6, 8, 6, Ink); } // очки
         var r = new System.Random(hat * 7 + 1);
         for (int i = 0; i < 10; i++) c.Set(r.Next(2, 14), 21 + r.Next(0, 3), Clear);
         c.Outline(Pix.Shade(col, 0.4f));
         return c;
     }
 
-    // ================= ЗАБЫТЫЕ =================
+    // ================= ЗАБЫТЫЕ (4 кадра анимации) =================
 
-    static Canvas Letter()
+    static Canvas Letter(int f)
     {
         var c = new Canvas(34, 32);
         Color32 paper = C("efe6d0"), shade = C("d9ceb4");
+        int flap = f % 2 == 1 ? 3 : 0;
         c.Rect(4, 9, 26, 17, paper);
         c.Line(4, 25, 17, 16, shade); c.Line(29, 25, 17, 16, shade);
-        c.Tri(4, 9, 29, 9, 17, 18, shade);
-        c.Circle(17, 17, 3, C("b02a2a"));
-        c.Set(17, 17, C("e05050"));
+        c.Line(2, 18 - flap / 2, 4, 16, paper); c.Line(31, 18 - flap / 2, 29, 16, paper);
+        c.Rect(10, 26, 2, f % 2 == 0 ? 3 : 2, paper); c.Rect(22, 26, 2, f % 2 == 0 ? 2 : 3, paper);
+        c.Shade();
+        c.Tri(4, 9, 29, 9, 17, 18 - flap, shade);
+        c.Circle(17, 17 - flap / 2, 3, C("b02a2a"));
+        c.Set(16, 16 - flap / 2, C("e05050"));
         c.Rect(23, 11, 4, 4, C("6a8ac0"));
-        c.Rect(9, 20, 2, 2, Ink); c.Rect(24, 20, 2, 2, Ink);
-        c.Set(9, 23, C("70a0e0")); c.Set(9, 24, C("70a0e0"));
-        c.Line(2, 18, 4, 16, paper); c.Line(31, 18, 29, 16, paper);
-        c.Rect(10, 26, 2, 3, paper); c.Rect(22, 26, 2, 3, paper);
+        if (f == 3) { c.Line(9, 21, 10, 21, Ink); c.Line(24, 21, 25, 21, Ink); }
+        else { c.Rect(9, 20, 2, 2, Ink); c.Set(9, 20, C("f8f0e0")); c.Rect(24, 20, 2, 2, Ink); c.Set(24, 20, C("f8f0e0")); }
+        c.Set(9, 23 + f % 2, C("70a0e0")); c.Set(9, 24 + f % 2, C("70a0e0"));
         c.Outline(Ink);
         return c;
     }
 
-    static Canvas Clock()
+    static void Hand(Canvas c, float cx, float cy, float deg, float len, Color32 col)
+    {
+        float a = deg * Mathf.Deg2Rad;
+        c.Line(cx, cy, cx + Mathf.Sin(a) * len, cy - Mathf.Cos(a) * len, col);
+    }
+
+    static Canvas Clock(int f)
     {
         var c = new Canvas(34, 36);
         Color32 gold = C("b89a4a"), face = C("e8e4d8");
         c.Ring(17, 2.5f, 2.5f, 1, gold);
         c.Rect(15, 4, 4, 3, gold);
         c.Circle(17, 19, 13, gold);
+        c.Shade();
         c.Circle(17, 19, 11, face);
         for (int i = 0; i < 12; i++)
         {
             float a = i * Mathf.PI / 6;
             c.Set(Mathf.RoundToInt(17 + Mathf.Cos(a) * 9), Mathf.RoundToInt(19 + Mathf.Sin(a) * 9), C("6a6050"));
         }
-        c.Line(17, 19, 17, 11, Ink); c.Line(17, 19, 22, 22, Ink);
         c.Line(8, 13, 12, 17, C("9a9488"));
-        c.Line(11, 15, 13, 15, Ink); c.Line(21, 15, 23, 15, Ink);
-        c.Set(16, 33, C("5080c0")); c.Set(19, 34, C("5080c0")); c.Set(19, 35, C("5080c0")); c.Set(9, 30, C("5080c0"));
+        // 17:42 — стрелки дрожат, но не могут сдвинуться; секундная пытается бежать
+        Hand(c, 17, 19, 171, 6, Ink);
+        Hand(c, 17, 19, 252 + (f % 2 == 0 ? -5 : 5), 9, Ink);
+        Hand(c, 17, 19, f * 90, 10, C("c03030"));
+        if (f == 3) { c.Rect(11, 14, 2, 2, Ink); c.Rect(22, 14, 2, 2, Ink); }
+        else { c.Line(11, 15, 13, 15, Ink); c.Line(21, 15, 23, 15, Ink); }
+        c.Set(16, 33 + f % 2, C("5080c0")); c.Set(19, 34 - f % 2, C("5080c0")); c.Set(19, 35 - f % 2, C("5080c0")); c.Set(9, 30 + f % 3, C("5080c0"));
         c.Outline(Ink);
         return c;
     }
 
-    static Canvas Keeper()
+    static Canvas Keeper(int f)
     {
         var c = new Canvas(44, 52);
-        Color32 red = C("b83a3a"), white = C("e8e0d8"), glass = C("ffe890"), roof = C("6a1a1a"), hand = C("e8c8a8");
+        Color32 red = C("b83a3a"), white = C("e8e0d8"), glass = f % 2 == 0 ? C("ffe890") : C("fff4c0"), roof = C("6a1a1a"), hand = C("e8c8a8");
         c.Rect(13, 20, 18, 30, (x, y) => ((y - 20) / 5) % 2 == 0 ? red : white);
         c.Tri(13, 20, 13, 50, 9, 50, red); c.Tri(30, 20, 30, 50, 34, 50, red);
         c.Rect(8, 49, 28, 3, C("3a3a44"));
@@ -267,141 +349,178 @@ public static class Art
         c.Rect(14, 8, 16, 10, glass);
         c.Line(18, 8, 18, 17, C("c8b060")); c.Line(25, 8, 25, 17, C("c8b060"));
         c.Tri(12, 8, 32, 8, 22, 0, roof);
-        // руки закрывают свет — отрицание
-        c.Line(13, 28, 8, 20, hand); c.Line(30, 28, 36, 20, hand);
-        c.Ellipse(17, 13, 5, 3.5f, hand); c.Ellipse(27, 13, 5, 3.5f, hand);
-        c.Line(14, 12, 20, 12, C("c8a888")); c.Line(24, 12, 30, 12, C("c8a888"));
+        c.Shade();
+        // руки закрывают свет — отрицание. Руки дрожат, свет прорывается между пальцами
+        int hy = f == 2 ? 1 : 0;
+        c.Line(13, 28, 8, 20 + hy, hand); c.Line(30, 28, 36, 20 + hy, hand);
+        c.Ellipse(17, 13 + hy, 5, 3.5f, hand); c.Ellipse(27, 13 + hy, 5, 3.5f, hand);
+        c.Line(14, 12 + hy, 20, 12 + hy, C("c8a888")); c.Line(24, 12 + hy, 30, 12 + hy, C("c8a888"));
+        if (f % 2 == 1) { c.Line(22, 9, 22, 17, C("ffffff")); c.Set(21, 11, C("fff8d0")); c.Set(23, 14, C("fff8d0")); }
         c.Outline(Ink);
         return c;
     }
 
-    static Canvas Cassette()
+    static Canvas Cassette(int f)
     {
         var c = new Canvas(38, 34);
         Color32 body = C("3a3a44"), label = C("e0c070"), tape = C("6a4020");
         c.Rect(3, 4, 32, 20, body);
         c.Rect(6, 6, 26, 8, label);
+        c.Shade();
         c.Line(8, 9, 29, 9, C("a08040")); c.Line(8, 11, 22, 11, C("a08040"));
         c.Rect(9, 15, 20, 6, C("1a1a20"));
         c.Circle(13, 18, 2.5f, C("f0f0f0")); c.Circle(25, 18, 2.5f, C("f0f0f0"));
-        c.Set(13, 18, Ink); c.Set(25, 18, Ink);
-        // зажёванная плёнка
-        c.Line(12, 24, 8, 27, tape); c.Line(8, 27, 12, 30, tape); c.Line(12, 30, 7, 33, tape);
-        c.Line(24, 24, 29, 28, tape); c.Line(29, 28, 26, 31, tape); c.Line(26, 31, 31, 33, tape);
-        c.Line(18, 24, 19, 29, tape);
+        // катушки-зрачки вращаются
+        int[] ox = { 0, 1, 0, -1 }, oy = { -1, 0, 1, 0 };
+        c.Set(13 + ox[f], 18 + oy[f], Ink); c.Set(25 + ox[f], 18 + oy[f], Ink);
+        // зажёванная плёнка шевелится
+        int w = f % 2;
+        c.Line(12, 24, 8 - w, 27, tape); c.Line(8 - w, 27, 12, 30, tape); c.Line(12, 30, 7 + w, 33, tape);
+        c.Line(24, 24, 29 + w, 28, tape); c.Line(29 + w, 28, 26, 31, tape); c.Line(26, 31, 31 - w, 33, tape);
+        c.Line(18, 24, 19 + w, 29, tape);
         c.Outline(Ink);
         return c;
     }
 
-    static Canvas Hope()
+    static Canvas Hope(int f)
     {
         var c = new Canvas(34, 42);
         Color32 stem = C("4a7a3a"), petal = C("c890a0"), petal2 = C("a87080");
-        c.Line(18, 41, 19, 30, stem); c.Line(19, 30, 17, 22, stem); c.Line(17, 22, 12, 17, stem);
+        int hx = 11 + new[] { 0, 1, 0, -1 }[f];
+        c.Line(18, 41, 19, 30, stem); c.Line(19, 30, 17, 22, stem); c.Line(17, 22, hx + 1, 17, stem);
         c.Line(19, 41, 20, 30, stem);
-        c.Tri(19, 32, 27, 28, 25, 34, C("5a8a4a")); c.Tri(18, 36, 10, 33, 12, 38, C("5a8a4a"));
+        c.Tri(19, 32, 27, 28 + f % 2, 25, 34, C("5a8a4a")); c.Tri(18, 36, 10, 33 - f % 2, 12, 38, C("5a8a4a"));
         for (int i = 0; i < 6; i++)
         {
             float a = i * Mathf.PI / 3 + 0.4f;
-            c.Ellipse(11 + Mathf.Cos(a) * 5.5f, 16 + Mathf.Sin(a) * 5.5f, 3.5f, 3.5f, i % 2 == 0 ? petal : petal2);
+            c.Ellipse(hx + Mathf.Cos(a) * 5.5f, 16 + Mathf.Sin(a) * 5.5f, 3.5f, 3.5f, i % 2 == 0 ? petal : petal2);
         }
-        c.Circle(11, 16, 4, C("2a2a30"));
-        c.Circle(11, 16, 1.6f, C("f0f0f0"));
-        c.Ellipse(24, 38, 2.5f, 1.5f, petal2);
+        c.Ellipse(24 + f % 2, 36 + f, 2.5f, 1.5f, petal2); // падающий лепесток
+        c.Shade();
+        c.Circle(hx, 16, 4, C("2a2a30"));
+        c.Circle(hx, 16, 1.6f, C("f0f0f0"));
+        c.Set(hx + (f % 2 == 0 ? 1 : -1), 16, Ink);
         c.Outline(Ink);
         return c;
     }
 
-    static Canvas Thorn()
+    static Canvas Thorn(int f)
     {
         var c = new Canvas(48, 52);
         Color32 rose = C("c0203a"), rose2 = C("8a1028"), vine = C("2a5a2a"), thorn = C("d8d0a0");
-        for (int k = 0; k < 3; k++)
-        {
-            c.Line(24 + k - 1, 51, 22 + k, 26, vine);
-        }
-        c.Line(23, 36, 6, 24, vine); c.Line(23, 37, 6, 25, vine);
-        c.Line(25, 36, 42, 24, vine); c.Line(25, 37, 42, 25, vine);
-        c.Line(6, 24, 2, 30, vine); c.Line(42, 24, 46, 30, vine);
-        int[] tx = { 10, 16, 32, 38 };
-        foreach (var x in tx) { c.Set(x, 24 + Math.Abs(x - 24) / 3 - 4, thorn); c.Set(x, 23 + Math.Abs(x - 24) / 3 - 4, thorn); }
-        c.Set(21, 44, thorn); c.Set(20, 44, thorn); c.Set(26, 40, thorn); c.Set(27, 40, thorn);
+        int ay = new[] { 0, -2, 0, 2 }[f];
+        for (int k = 0; k < 3; k++) c.Line(24 + k - 1, 51, 22 + k, 26, vine);
+        c.Line(23, 36, 6, 24 + ay, vine); c.Line(23, 37, 6, 25 + ay, vine);
+        c.Line(25, 36, 42, 24 - ay, vine); c.Line(25, 37, 42, 25 - ay, vine);
+        c.Line(6, 24 + ay, 2, 30 + ay, vine); c.Line(42, 24 - ay, 46, 30 - ay, vine);
         c.Ellipse(24, 15, 14, 12, rose);
+        c.Shade();
+        int[] tx = { 10, 16, 32, 38 };
+        foreach (var x in tx)
+        {
+            int dy = x < 24 ? ay : -ay;
+            c.Set(x, 24 + Math.Abs(x - 24) / 3 - 4 + dy, thorn); c.Set(x, 23 + Math.Abs(x - 24) / 3 - 4 + dy, thorn);
+        }
+        c.Set(21, 44, thorn); c.Set(20, 44, thorn); c.Set(26, 40, thorn); c.Set(27, 40, thorn);
         c.Ring(24, 15, 10, 1, rose2); c.Ring(24, 15, 6, 1, rose2); c.Ring(24, 15, 3, 1, rose2);
-        // злые глаза
+        // злые глаза горят, пасть щёлкает
         c.Line(14, 10, 20, 13, Ink); c.Line(34, 10, 28, 13, Ink);
-        c.Rect(16, 13, 3, 2, C("ffe040")); c.Rect(29, 13, 3, 2, C("ffe040"));
-        for (int x = 17; x < 32; x += 2) { c.Set(x, 21, Ink); c.Set(x + 1, 20, Ink); }
+        var eye = f % 2 == 0 ? C("ffe040") : C("ff9030");
+        c.Rect(16, 13, 3, 2, eye); c.Rect(29, 13, 3, 2, eye);
+        if (f % 2 == 1)
+        {
+            c.Rect(17, 19, 15, 3, C("400810"));
+            for (int x = 17; x < 32; x += 2) { c.Set(x, 19, thorn); c.Set(x + 1, 21, thorn); }
+        }
+        else for (int x = 17; x < 32; x += 2) { c.Set(x, 21, Ink); c.Set(x + 1, 20, Ink); }
         c.Outline(Ink);
         return c;
     }
 
-    static Canvas Moth()
+    static Canvas Moth(int f)
     {
         var c = new Canvas(34, 30);
         Color32 pink = C("ff4fd8"), cyan = C("40e0ff");
-        c.Ellipse(9, 12, 8, 9, pink); c.Ellipse(25, 12, 8, 9, pink);
-        c.Ellipse(10, 22, 5, 5, cyan); c.Ellipse(24, 22, 5, 5, cyan);
-        c.Circle(9, 11, 3, cyan); c.Circle(25, 11, 3, cyan);
-        c.Circle(9, 11, 1.2f, Ink); c.Circle(25, 11, 1.2f, Ink);
+        float ry = new[] { 9f, 7f, 4f, 7f }[f], ry2 = new[] { 5f, 4f, 3f, 4f }[f];
+        c.Ellipse(9, 12, 8, ry, pink); c.Ellipse(25, 12, 8, ry, pink);
+        c.Ellipse(10, 22, 5, ry2, cyan); c.Ellipse(24, 22, 5, ry2, cyan);
+        c.Shade(1.25f, 0.75f);
+        if (ry >= 7)
+        {
+            c.Circle(9, 11, 3, cyan); c.Circle(25, 11, 3, cyan);
+            c.Circle(9, 11, 1.2f, Ink); c.Circle(25, 11, 1.2f, Ink);
+        }
         c.Ellipse(17, 16, 2.5f, 10, C("2a1a3a"));
-        c.Line(16, 6, 12, 1, C("c0c0ff")); c.Line(18, 6, 22, 1, C("c0c0ff"));
-        c.Set(12, 1, C("ffffa0")); c.Set(22, 1, C("ffffa0"));
+        c.Line(16, 6, 12, 1 + f % 2, C("c0c0ff")); c.Line(18, 6, 22, 1 + f % 2, C("c0c0ff"));
+        c.Set(12, 1 + f % 2, C("ffffa0")); c.Set(22, 1 + f % 2, C("ffffa0"));
         c.Outline(C("0a0010"));
         return c;
     }
 
-    static Canvas Token()
+    static Canvas Token(int f)
     {
         var c = new Canvas(34, 36);
         Color32 gold = C("e0b040"), g2 = C("b08020"), g3 = C("f8d870");
-        c.Circle(17, 16, 13, gold);
-        c.Ring(17, 16, 13, 2, g2);
-        c.Circle(17, 16, 8, g3);
-        c.Rect(13, 13, 2, 3, Ink); c.Rect(20, 13, 2, 3, Ink);
-        c.Line(13, 19, 15, 21, Ink); c.Line(15, 21, 19, 21, Ink); c.Line(19, 21, 21, 19, Ink);
+        float rx = new[] { 13f, 9f, 3f, 9f }[f];
         c.Line(10, 28, 8, 34, g2); c.Line(24, 28, 26, 34, g2);
-        c.Line(4, 16, 0, 12, g2); c.Line(30, 16, 34, 12, g2);
+        c.Line(4, 16, 0, 12 + f % 2 * 2, g2); c.Line(30, 16, 34, 12 + f % 2 * 2, g2);
+        c.Ellipse(17, 16, rx, 13, g2);
+        if (rx > 3) c.Ellipse(17, 16, rx - 2, 11, gold);
+        c.Shade(1.3f, 0.75f);
+        if (rx > 3) c.Ellipse(17, 16, rx * 0.6f, 8, g3);
+        if (rx >= 9)
+        {
+            float k = rx / 13f;
+            c.Rect(Mathf.RoundToInt(17 - 4 * k), 13, 2, 3, Ink); c.Rect(Mathf.RoundToInt(17 + 3 * k), 13, 2, 3, Ink);
+            c.Line(17 - 4 * k, 19, 17 - 2 * k, 21, Ink); c.Line(17 - 2 * k, 21, 17 + 2 * k, 21, Ink); c.Line(17 + 2 * k, 21, 17 + 4 * k, 19, Ink);
+        }
         c.Outline(Ink);
         return c;
     }
 
-    static Canvas Merchant()
+    static Canvas Merchant(int f)
     {
         var c = new Canvas(48, 56);
         Color32 coat = C("5a2a7a"), coat2 = C("40205a"), face = C("e8e0f0"), gold = C("e0b040"), cyan = C("40e0ff");
+        int t = new[] { 0, 2, 0, -2 }[f];
         c.Tri(24, 22, 4, 55, 44, 55, (x, y) => ((x / 3) % 2 == 0) ? coat : coat2);
-        c.Line(24, 26, 24, 55, cyan);
-        // четыре руки и весы
-        c.Line(18, 30, 6, 28, coat); c.Line(30, 30, 42, 28, coat);
+        // четыре руки и весы: чаши качаются
+        c.Line(18, 30, 6, 28 + t, coat); c.Line(30, 30, 42, 28 - t, coat);
         c.Line(18, 36, 8, 42, coat); c.Line(30, 36, 40, 42, coat);
-        c.Circle(6, 28, 1.5f, face); c.Circle(42, 28, 1.5f, face); c.Circle(8, 42, 1.5f, face); c.Circle(40, 42, 1.5f, face);
-        c.Line(6, 27, 42, 27, gold);
-        c.Line(6, 27, 3, 33, gold); c.Line(6, 27, 9, 33, gold); c.Ellipse(6, 34, 4, 1.5f, gold);
-        c.Line(42, 27, 39, 33, gold); c.Line(42, 27, 45, 33, gold); c.Ellipse(42, 34, 4, 1.5f, gold);
-        c.Circle(6, 32, 1.5f, C("ff4fd8")); c.Circle(42, 32, 1.5f, cyan);
         c.Ellipse(24, 18, 8, 7, face);
+        c.Shade();
+        c.Line(24, 26, 24, 55, cyan);
+        c.Circle(6, 28 + t, 1.5f, face); c.Circle(42, 28 - t, 1.5f, face); c.Circle(8, 42, 1.5f, face); c.Circle(40, 42, 1.5f, face);
+        c.Line(6, 27 + t, 42, 27 - t, gold);
+        c.Line(6, 27 + t, 3, 33 + t, gold); c.Line(6, 27 + t, 9, 33 + t, gold); c.Ellipse(6, 34 + t, 4, 1.5f, gold);
+        c.Line(42, 27 - t, 39, 33 - t, gold); c.Line(42, 27 - t, 45, 33 - t, gold); c.Ellipse(42, 34 - t, 4, 1.5f, gold);
+        c.Circle(6, 32 + t, 1.5f, C("ff4fd8")); c.Circle(42, 32 - t, 1.5f, cyan);
         c.Ring(27, 17, 2.5f, 1, gold);
         c.Set(20, 17, Ink); c.Set(27, 17, Ink);
-        c.Line(18, 21, 30, 21, Ink); c.Set(17, 20, Ink); c.Set(31, 20, Ink);
-        c.Rect(16, 2, 16, 10, C("15101f"));
-        c.Rect(16, 9, 16, 2, C("ff4fd8"));
+        int grin = f == 3 ? 1 : 0;
+        c.Line(18 - grin, 21, 30 + grin, 21, Ink); c.Set(17 - grin, 20, Ink); c.Set(31 + grin, 20, Ink);
+        int hb = f == 1 ? -1 : 0;
+        c.Rect(16, 2 + hb, 16, 10, C("15101f"));
+        c.Rect(16, 9 + hb, 16, 2, C("ff4fd8"));
         c.Rect(12, 11, 24, 2, C("15101f"));
         c.Outline(C("0a0010"));
         return c;
     }
 
-    static Canvas Page()
+    static Canvas Page(int f)
     {
         var c = new Canvas(34, 38);
         Color32 white = C("f4f4f0"), gray = C("c8c8c4");
+        int ear = f % 2 == 0 ? 6 : 8;
         c.Rect(6, 3, 22, 31, white);
-        c.Tri(22, 3, 28, 3, 28, 9, Clear);
-        c.Tri(22, 3, 22, 9, 28, 9, gray);
+        c.Rect(9, 34, 2, f % 2 == 0 ? 3 : 2, white); c.Rect(23, 34, 2, f % 2 == 0 ? 2 : 3, white);
+        c.Tri(28 - ear, 3, 28, 3, 28, 3 + ear, Clear);
+        c.Shade(1.05f, 0.85f);
+        c.Tri(28 - ear, 3, 28 - ear, 3 + ear, 28, 3 + ear, gray);
         for (int y = 24; y < 32; y += 3) c.Line(10, y, 23, y, C("e4e4e0"));
-        c.Ring(13, 16, 3, 1, C("808080")); c.Ring(21, 16, 3, 1, C("808080"));
+        if (f == 3) { c.Line(11, 16, 15, 16, C("808080")); c.Line(19, 16, 23, 16, C("808080")); }
+        else { c.Ring(13, 16, 3, 1, C("808080")); c.Ring(21, 16, 3, 1, C("808080")); }
         c.Line(15, 22, 19, 22, C("a0a0a0"));
-        c.Rect(9, 34, 2, 3, white); c.Rect(23, 34, 2, 3, white);
         c.Outline(C("505050"));
         return c;
     }
@@ -481,6 +600,15 @@ public static class Art
         Canvas c;
         switch (key)
         {
+            case "b_tear":
+                c = new Canvas(5, 9);
+                c.Circle(2.5f, 6, 2.4f, C("7aa8ff")); c.Tri(0.5f, 5.5f, 4.5f, 5.5f, 2.5f, 0, C("7aa8ff")); c.Set(1, 5, C("d8e8ff"));
+                return c;
+            case "b_eye":
+                c = new Canvas(13, 9);
+                c.Ellipse(6.5f, 4.5f, 6.5f, 4.2f, C("e8e0f0")); c.Circle(6.5f, 4.5f, 2.6f, C("3a2060")); c.Circle(6.5f, 4.5f, 1.1f, C("ff3050"));
+                c.Outline(C("15101f"));
+                return c;
             case "b_letter":
                 c = new Canvas(9, 7);
                 c.Rect(0, 0, 9, 7, C("efe6d0")); c.Line(0, 0, 4, 3, C("a09070")); c.Line(8, 0, 4, 3, C("a09070"));

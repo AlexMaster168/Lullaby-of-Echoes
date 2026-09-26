@@ -15,12 +15,13 @@ public class SaveData
     public List<string> erased = new List<string>();
     public int skips;
     public float time;
+    public int diff = 2;                             // 0 новичок, 1 легко, 2 нормально, 3 трудно
 
     public bool Has(string f) => flags.Contains(f);
     public void Set(string f) { if (!flags.Contains(f)) flags.Add(f); }
     public bool Done(string id) => spared.Contains(id) || erased.Contains(id);
     public int Void => erased.Count;                 // «ПУСТОТА» — аналог LV
-    public int Atk => 8 + erased.Count * 3;
+    public int Atk => 6 + erased.Count * 2;          // растёт от стирания, но без «ваншотов»
     public bool AllErased => erased.Count >= Game.TotalEnemies;
 }
 
@@ -146,6 +147,31 @@ public class Game : MonoBehaviour
     }
 }
 
+// ---------- Сложность ----------
+public static class Diff
+{
+    public static readonly string[] Names = { "Новичок", "Легко", "Нормально", "Трудно" };
+    public static readonly string[] Desc =
+    {
+        "Бесконечное восстановление ПАМЯТИ: ПЛЕЕР в бою\nили клавиша H в любой момент. Пройдёт каждый.",
+        "Больше ПАМЯТИ, слабее и реже атаки.\nДля тех, кто пришёл за историей.",
+        "Так, как задумано.\nБоссы заставят попотеть.",
+        "Меньше ПАМЯТИ, быстрые и плотные атаки,\nу врагов больше здоровья. Удачи."
+    };
+    static int D => Mathf.Clamp(Game.I.S.diff, 0, 3);
+    static float Pick(float n, float a, float b, float c) => D == 0 ? n : D == 1 ? a : D == 2 ? b : c;
+    public static bool Novice => D == 0;
+
+    public static float EnemyHp => Pick(0.6f, 0.7f, 1f, 1.35f);
+    public static float EnemyAtk => Pick(0.5f, 0.6f, 1f, 1.5f);
+    public static float Density => Pick(0.65f, 0.72f, 1f, 1.3f);   // как часто появляются снаряды
+    public static float Speed => Pick(0.8f, 0.85f, 1f, 1.15f);    // как быстро летят
+    public static float Invuln => Pick(1.6f, 1.4f, 1f, 0.75f);    // неуязвимость после удара
+    public static int MaxHp => D == 0 ? 40 : D == 1 ? 30 : D == 2 ? 20 : 16;
+    public static int Hums => D == 0 ? 9 : D == 1 ? 4 : D == 2 ? 3 : 2;
+    public static string Name => Names[D];
+}
+
 // ---------- Ввод (стрелки/WASD, Z/Enter — ок, X/Shift — назад) ----------
 public static class In
 {
@@ -228,6 +254,49 @@ public static class G
     {
         if (t == null) return;
         Tex(t, Mathf.Round(cx - t.width * s / 2f), Mathf.Round(footY - t.height * s), s, flip, tint);
+    }
+
+    // Растяжение по X/Y отдельно — «дыхание», сплющивание при ударе
+    public static void TexFootXY(Texture2D t, float cx, float footY, float sx, float sy, bool flip = false, Color? tint = null)
+    {
+        if (t == null) return;
+        float w = t.width * sx, h = t.height * sy;
+        GUI.color = tint ?? Color.white;
+        var r = new Rect(cx - w / 2f, footY - h, w, h);
+        if (flip) GUI.DrawTextureWithTexCoords(r, t, new Rect(1, 0, -1, 1));
+        else GUI.DrawTexture(r, t);
+        GUI.color = Color.white;
+    }
+
+    // Поворот вокруг центра. groupOffset — смещение GUI.BeginGroup, если рисуем внутри группы
+    public static void TexRot(Texture2D t, float cx, float cy, float s, float deg, Color? tint = null, Vector2 groupOffset = default)
+    {
+        if (t == null) return;
+        var m = GUI.matrix;
+        Vector3 p = new Vector3(cx + groupOffset.x, cy + groupOffset.y, 0);
+        GUI.matrix = m * Matrix4x4.Translate(p) * Matrix4x4.Rotate(Quaternion.Euler(0, 0, deg)) * Matrix4x4.Translate(-p);
+        TexC(t, cx, cy, s, tint);
+        GUI.matrix = m;
+    }
+
+    // Толстая линия (для разрезов, лучей)
+    public static void Line(float x0, float y0, float x1, float y1, float thick, Color c)
+    {
+        float len = Mathf.Sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0));
+        float deg = Mathf.Atan2(y1 - y0, x1 - x0) * Mathf.Rad2Deg;
+        var m = GUI.matrix;
+        Vector3 p = new Vector3(x0, y0, 0);
+        GUI.matrix = m * Matrix4x4.Translate(p) * Matrix4x4.Rotate(Quaternion.Euler(0, 0, deg)) * Matrix4x4.Translate(-p);
+        Rect(x0, y0 - thick / 2, len, thick, c);
+        GUI.matrix = m;
+    }
+
+    // Мягкое свечение
+    public static void Glow(float cx, float cy, float r, Color c)
+    {
+        GUI.color = c;
+        GUI.DrawTexture(new Rect(cx - r, cy - r, r * 2, r * 2), Pix.GlowTex);
+        GUI.color = Color.white;
     }
 
     public static void TexC(Texture2D t, float cx, float cy, float s = 2, Color? tint = null)

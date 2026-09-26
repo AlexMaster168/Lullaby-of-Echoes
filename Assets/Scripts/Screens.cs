@@ -20,6 +20,11 @@ public static class Screens
     // ===================== ТИТУЛ =====================
     static int titleSel;
     static List<string> titleItems = new List<string>();
+    static bool choosingDiff;
+    public static bool ChoosingDiff => choosingDiff;
+    static int diffSel = 2;
+    public static int PendingDiff = 2;
+    public static int DefaultDiff = 2;   // какая сложность подсвечена при открытии меню
 
     public static IEnumerator Title()
     {
@@ -37,14 +42,33 @@ public static class Screens
         Gm.music.Play("title", 1f);
         yield return Gm.Fade(0, 1.2f);
         Gm.StartCoroutine(Prewarm());
+        choosingDiff = false;
+        string pick;
         while (true)
         {
-            if (In.Up) { titleSel = (titleSel + titleItems.Count - 1) % titleItems.Count; Gm.music.Sfx("select"); }
-            if (In.Down) { titleSel = (titleSel + 1) % titleItems.Count; Gm.music.Sfx("select"); }
-            if (In.Ok) { In.Eat(); Gm.music.Sfx("confirm"); break; }
+            if (!choosingDiff)
+            {
+                if (In.Up) { titleSel = (titleSel + titleItems.Count - 1) % titleItems.Count; Gm.music.Sfx("select"); }
+                if (In.Down) { titleSel = (titleSel + 1) % titleItems.Count; Gm.music.Sfx("select"); }
+                if (In.Ok)
+                {
+                    In.Eat(); Gm.music.Sfx("confirm");
+                    pick = titleItems[titleSel];
+                    if (pick != "Новая игра") break;
+                    choosingDiff = true;
+                    diffSel = DefaultDiff;
+                }
+            }
+            else
+            {
+                // Выбор сложности
+                if (In.Up) { diffSel = (diffSel + 3) % 4; Gm.music.Sfx("select"); }
+                if (In.Down) { diffSel = (diffSel + 1) % 4; Gm.music.Sfx("select"); }
+                if (In.Back && !In.auto) { In.Eat(); choosingDiff = false; }
+                else if (In.Ok) { In.Eat(); Gm.music.Sfx("save"); PendingDiff = diffSel; pick = "Новая игра"; break; }
+            }
             yield return null;
         }
-        string pick = titleItems[titleSel];
         if (pick == "Выход") { Gm.Quit(); yield break; }
         yield return Gm.Fade(1, 1f);
         Gm.onDraw = null;
@@ -53,7 +77,7 @@ public static class Screens
 
     static IEnumerator Prewarm()
     {
-        foreach (var k in new[] { "dock", "battle", "boss", "echo", "garden", "neon", "archive", "oculus", "gameover", "tape1", "tape2", "tape3", "tape4",
+        foreach (var k in new[] { "dock", "battle", "boss", "echo", "garden", "neon", "archive", "oculus", "oculus_boss", "gameover", "tape1", "tape2", "tape3", "tape4",
                      "blip", "select", "confirm", "hurt", "heal", "erase", "slash", "spare", "encounter", "save", "click", "beep" })
         {
             Tracks.Get(k);
@@ -89,6 +113,21 @@ public static class Screens
         G.TexFoot(Pix.Color("noa_u0"), 320, 330, 3);
         G.TexFoot(Pix.Color("skrip" + ((int)(t * 3) % 2)), 370, 300 + Mathf.Sin(t * 2) * 5, 3);
 
+        if (choosingDiff)
+        {
+            G.Box(120, 222, 400, 250);
+            G.Center("СЛОЖНОСТЬ", 232, 18, new Color(1, 0.9f, 0.4f));
+            for (int i = 0; i < 4; i++)
+            {
+                bool sel = i == diffSel;
+                float y = 262 + i * 30;
+                if (sel) G.Tex(Pix.Color("soul"), 200, y + 6, 2);
+                G.Text(Diff.Names[i], 225, y, 22, sel ? new Color(1, 1, 0.3f) : Color.white);
+            }
+            G.Text(Diff.Desc[diffSel], 140, 390, 15, new Color(0.75f, 0.8f, 0.95f), TextAnchor.UpperLeft, 370);
+            G.Text("Z — начать   X — назад", 140, 440, 12, new Color(0.5f, 0.5f, 0.5f));
+            return;
+        }
         for (int i = 0; i < titleItems.Count; i++)
         {
             bool sel = i == titleSel;

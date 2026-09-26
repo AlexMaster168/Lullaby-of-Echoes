@@ -242,6 +242,21 @@ public class World
                     else G.Tex(Pix.Get(b), s.x, s.y, Z);
                 }
                 if (d != null) G.Tex(Pix.Get(d), s.x, s.y, Z);
+
+                // Тень от стены на полу и пена у кромки воды
+                char ch = grid[x, y];
+                char up = y > 0 ? grid[x, y - 1] : '#';
+                if (!TileSolid(ch) && (up == '#' || up == 'W'))
+                {
+                    G.Rect(s.x, s.y, 32, 6, new Color(0, 0, 0, 0.35f));
+                    G.Rect(s.x, s.y + 6, 32, 5, new Color(0, 0, 0, 0.15f));
+                }
+                if (ch == '~' && up != '~' && up != ' ' && area.zone != "arch")
+                {
+                    float a = 0.25f + 0.15f * Mathf.Sin(Time.time * 2 + x);
+                    G.Rect(s.x, s.y, 32, 2, new Color(0.85f, 0.95f, 1f, a));
+                    G.Rect(s.x + (x * 5 + (int)(Time.time * 6)) % 24, s.y + 4, 8, 2, new Color(0.85f, 0.95f, 1f, a * 0.6f));
+                }
             }
 
         // Объекты сортируются по Y
@@ -258,6 +273,7 @@ public class World
         foreach (var o in order) o.draw();
 
         DrawOverlay();
+        DrawLights(x0, y0, x1, y1);
 
         if (titleT < 3.5f && area.title != null)
         {
@@ -269,27 +285,77 @@ public class World
 
     void DrawEnt(Ent e)
     {
-        string key = e.anim ? e.sprite + ((int)(Time.time * 4) % (e.sprite == "static" ? 3 : 2)) : e.sprite;
+        string key = e.anim ? e.sprite + ((int)(Time.time * 4) % (e.sprite == "static" ? 3 : 2))
+            : e.sprite.StartsWith("e_") ? e.sprite + "@" + ((int)(Time.time * 4 + e.x) % 4)
+            : e.sprite;
         var tex = Pix.Get(key);
         if (tex == null) return;
         float bob = e.floaty ? Mathf.Sin(Time.time * 2.5f + e.x) * 3 - 6 : 0;
         var s = ToScreen(e.x, e.y);
-        // тень
-        G.Rect(s.x - 10, s.y - 3, 20, 4, new Color(0, 0, 0, 0.3f));
-        G.TexFoot(tex, s.x, s.y + bob, e.scale, e.flip, e.tint);
+        // тень (у парящих — меньше)
+        float sw = e.floaty ? 16 - bob : 22;
+        G.Rect(s.x - sw / 2, s.y - 3, sw, 5, new Color(0, 0, 0, 0.3f));
+        // живые персонажи «дышат»
+        float br = e.sprite.StartsWith("npc") || e.sprite == "echo" || e.sprite.StartsWith("oculus") ? Mathf.Sin(Time.time * 2 + e.x) * 0.04f : 0;
+        G.TexFootXY(tex, s.x, s.y + bob, e.scale * (1 - br * 0.5f), e.scale * (1 + br), e.flip, e.tint);
     }
+
+    // Свет фонарей, неона, точек сохранения; затемнение углов
+    void DrawLights(int x0, int y0, int x1, int y1)
+    {
+        float t = Time.time;
+        float amb = area.zone == "dock" ? 0.25f : area.zone == "neon" ? 0.2f : 0;
+        if (amb > 0) G.Rect(0, 0, Game.W, Game.H, new Color(0.02f, 0.02f, 0.08f, amb));
+        float g = 1 - Pix.Gray * 0.7f;
+        for (int y = y0; y <= y1; y++)
+            for (int x = x0; x <= x1; x++)
+            {
+                char ch = grid[x, y];
+                if (ch != 'L' && ch != 'n') continue;
+                var s = ToScreen(x * T + 8, y * T + 4);
+                if (ch == 'L')
+                {
+                    float fl = 0.34f + 0.05f * Mathf.Sin(t * 9 + x) + 0.04f * Mathf.Sin(t * 23 + y);
+                    G.Glow(s.x, s.y + 30, 130, new Color(1f, 0.8f, 0.45f, fl * g));
+                    G.Glow(s.x, s.y, 34, new Color(1f, 0.95f, 0.8f, 0.55f * g));
+                }
+                else
+                {
+                    bool on = Mathf.Sin(t * 13 + x * 3) > -0.9f; // неон изредка мигает
+                    if (on) G.Glow(s.x, s.y + 4, 80, new Color(1f, 0.3f, 0.85f, 0.3f * g));
+                }
+            }
+        foreach (var e in ents)
+        {
+            if (e.hidden || e.sprite == null) continue;
+            var s = ToScreen(e.x, e.y - 10);
+            if (e.sprite == "save") G.Glow(s.x, s.y, 34 + Mathf.Sin(t * 3) * 6, new Color(1f, 0.95f, 0.4f, 0.3f * g));
+            else if (e.sprite == "exit") G.Glow(s.x, s.y - 10, 60 + Mathf.Sin(t * 2) * 8, new Color(1f, 1f, 0.9f, 0.3f));
+            else if (e.sprite == "tape") G.Glow(s.x, s.y, 22, new Color(0.7f, 0.85f, 1f, 0.3f * g));
+        }
+        GUI.color = new Color(0, 0, 0, area.zone == "arch" ? 0.35f : 0.55f);
+        GUI.DrawTexture(new Rect(-80, -60, Game.W + 160, Game.H + 120), Pix.VignetteTex);
+        GUI.color = Color.white;
+    }
+
+    static readonly int[] WalkCycle = { 0, 1, 0, 2 };
 
     void DrawPlayer()
     {
-        int f = moving ? ((int)(walkT * 6) % 2) : 0;
         char dir = facing == 'l' || facing == 'r' ? 's' : facing;
+        int f;
+        if (moving) f = WalkCycle[(int)(walkT * 8) % 4];
+        else f = dir != 'u' && (Time.time % 3.7f) < 0.13f ? 3 : 0; // моргание
+        float bob = moving && f != 0 ? -2 : 0;
         var s = ToScreen(pos.x, pos.y);
-        G.TexFoot(Pix.Get("noa_" + dir + f), s.x, s.y + 2, Z, facing == 'l');
+        G.Rect(s.x - 11, s.y - 1, 22, 5, new Color(0, 0, 0, 0.3f));
+        G.TexFoot(Pix.Get("noa_" + dir + f), s.x, s.y + 2 + bob, Z, facing == 'l');
     }
 
     void DrawSkrip()
     {
         var s = ToScreen(skripPos.x, skripPos.y);
+        G.Rect(s.x - 7, s.y - 2, 14, 4, new Color(0, 0, 0, 0.2f));
         int f = (int)(Time.time * 4) % 2;
         G.TexFoot(Pix.Get("skrip" + f), s.x, s.y - 18 + Mathf.Sin(Time.time * 3) * 4, Z, pos.x < skripPos.x);
     }
@@ -364,6 +430,7 @@ public class World
         G.Text($"ПУСТОТА {S.Void}", 64, 128, 18, S.Void > 0 ? new Color(0.7f, 0.7f, 0.7f) : Color.white);
         G.Text($"КАССЕТЫ {Story.TapeCount}/4", 64, 156, 18, Color.white);
         G.Text($"НАПЕВЫ  {S.hums}", 64, 184, 18, Color.white);
+        G.Text(Diff.Name.ToUpper(), 190, 64, 14, new Color(0.6f, 0.7f, 0.9f));
         G.Text("[C] закрыть", 64, 212, 14, new Color(0.6f, 0.6f, 0.6f));
     }
 }
